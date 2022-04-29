@@ -205,8 +205,6 @@ public class MyTest {
    public class Address {
        private String address;
    
-   
-   
        public String getAddress() {
            return address;
        }
@@ -223,7 +221,7 @@ public class MyTest {
        }
    }
    ```
-
+   
    
 
 2. 真实对象
@@ -437,7 +435,7 @@ id可以省略
 </beans>
 ```
 
-## 7.4 使用注解实现自动装配
+## 7.4 使用注解实现自动装配 @Autowired
 
 需要导入约束 context
 
@@ -463,13 +461,16 @@ id可以省略
 ```
 
 ```java
-// 直接在属性上或者set方法上用就行
+// @Autowired 
+// 可以直接在属性上或者set方法上用就行，在属性上用，可以省略set方法
 // 属性上加 @Autowired 可以省略set方法
 public class People {
+    
 	@Autowired(required = false)
     private Cat cat;
-    @Autowired
-    @Qualifier(value = "dog222")
+    
+    @Autowired //按类型装配
+    @Qualifier(value = "dog222") // 类型相同的bean有多个时候 指定bean的名称
     private Dog dog;
 }
 ```
@@ -501,7 +502,7 @@ public class People {
 
 1. bean
 
-2. 属性如何注入
+2. 简单属性如何注入
 
    ```java
    package com.cw.pojo;
@@ -515,6 +516,8 @@ public class People {
    public class User {
        //相当于 value = "cw"
        @Value("cw")
+       // 或者来自配置文件
+       @Value("${name}")
        public String name;
    }
    ```
@@ -529,13 +532,13 @@ public class People {
 
 4. 自动装配置
 
-5. 作用域
+5. bean的作用域
 
    ```java
-   @Scope("prototype")
+   @Scope("prototype") // 实现类的注解
    ```
 
-   
+   ![image-20220429162454010](img/image-20220429162454010.png)
 
 6. 小结
 
@@ -558,7 +561,7 @@ public class People {
      <context:annotation-config/>
      ```
 
-# 9 使用java的方式配置spring
+# 9. 纯bean的方式配置spring
 
 完全不使用xml
 
@@ -578,13 +581,16 @@ import org.springframework.context.annotation.Import;
 // 也会被容器托管，配置类 类似于beans.xml
 @Configuration
 @ComponentScan("com.cw.pojo")
-@Import(MyConfig2.class)
+@Import(MyConfig2.class) //导入另一个配置类
+// 使用PropertySource加载properties文件
+@PropertySource({"classpath:jdbc.properties"})
 public class MyConfig {
-
-    //相当于注册一个bean
-    //id = getUser class = 返回值
+	
+    //使用@Bean配置第三方bean
+    //@Bean 表示当前方法的返回值是一个bean
+    //id = user class = 返回值
     @Bean
-    public User getUser(){
+    public User user(){
         return new User();
     }
 }
@@ -638,13 +644,47 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class MyTest {
     public static void main(String[] args) {
         ApplicationContext context = new AnnotationConfigApplicationContext(MyConfig.class);
-        User user = context.getBean("getUser", User.class);
+        User user = context.getBean("user", User.class);
         System.out.println(user.getName());
     }
 }
 ```
 
-# 10 代理模式
+### 总结
+
+![image-20220429165010162](img/image-20220429165010162-16512222132071-16512232576642-16512232595633-16512232611444-16512232638825.png)
+
+# 10. Spring 整合其他
+
+## 10.1 Spring 整合 Mybatis
+
+1. 添加依赖
+
+   ![image-20220429171054833](img/image-20220429171054833.png)
+
+2. 定义mybatis配置类，加入到spring的配置类中
+
+<img src="img/image-20220429171341994.png" alt="image-20220429171341994" style="zoom:50%;" />
+
+<img src="img/image-20220429171531087.png" alt="image-20220429171531087" style="zoom:50%;" />
+
+<img src="img/image-20220429170855794.png" alt="image-20220429170855794" style="zoom:50%;" />
+
+
+
+3. 使用
+
+   <img src="img/image-20220429171620755.png" alt="image-20220429171620755" style="zoom:50%;" />
+
+   
+
+## 10.1 Spring 整合 Junit
+
+<img src="img/image-20220429173920060.png" alt="image-20220429173920060" style="zoom:50%;" />
+
+
+
+# 11 代理模式
 
 为什么学习代理模式？因为这是SpringAOP的底层【面试容易问】
 
@@ -653,7 +693,7 @@ public class MyTest {
 * 静态代理
 * 动态代理
 
-## 10.1 静态代理
+## 11.1 静态代理
 
 角色分析：
 
@@ -742,7 +782,7 @@ public class MyTest {
 
 缺点：一个真实角色会产生一个代理角色，代码量翻倍，效率低
 
-## 10.2 动态代理
+## 11.2 动态代理
 
 * 角色和静态代理一样
 * 动态代理的代理是动态生成的
@@ -834,20 +874,33 @@ public class Client {
 }
 ```
 
-# 11 AOP
+# 12 AOP
 
-## 11.1 什么是AOP
+## 12.1 什么是AOP
 
-面向切面编程（AOP是Aspect Oriented Program的首字母缩写） ，我们知道，面向对象的特点是继承、多态和封装。而封装就要求将功能分散到不同的对象中去，这在软件设计中往往称为职责分配。实际上也就是说，让不同的类设计不同的方法。这样代码就分散到一个个的类中去了。这样做的好处是降低了代码的复杂程度，使类可重用。
-但是人们也发现，在分散代码的同时，也增加了代码的重复性。什么意思呢？比如说，我们在两个类中，可能都需要在每个方法中做日志。按面向对象的设计方法，我们就必须在两个类的方法中都加入日志的内容。也许他们是完全相同的，但就是因为面向对象的设计让类与类之间无法联系，而不能将这些重复的代码统一起来。
-也许有人会说，那好办啊，我们可以将这段代码写在一个独立的类独立的方法里，然后再在这两个类中调用。但是，这样一来，这两个类跟我们上面提到的独立的类就有耦合了，它的改变会影响这两个类。那么，有没有什么办法，能让我们在需要的时候，随意地加入代码呢？**这种在运行时，动态地将代码切入到类的指定方法、指定位置上的编程思想就是面向切面的编程。**
-一般而言，我们管切入到指定类指定方法的代码片段称为切面，而切入到哪些类、哪些方法则叫切入点。有了AOP，我们就可以把几个类共有的代码，抽取到一个切片中，等到需要时再切入对象中去，从而改变其原有的行为。
-这样看来，AOP其实只是OOP的补充而已。OOP从横向上区分出一个个的类来，而AOP则从纵向上向对象中加入特定的代码。有了AOP，OOP变得立体了。如果加上时间维度，AOP使OOP由原来的二维变为三维了，由平面变成立体了。从技术上来说，AOP基本上是通过代理机制实现的。
-AOP在编程历史上可以说是里程碑式的，对OOP编程是一种十分有益的补充。
+AOP作用：在不接触原始代码的基础上为其进行功能增强
+
+我们称还未加入新功能的原始方法为**连接点**
+我们称已经加入新功能的原始方法为**切入点**
+我们称原始方法都加入的共性功能为**通知** 也就是新功能
+将通知和切入点连接的方法叫**切面**
+通知所在的类为**通知类**
+
+- 连接点(JoinPoint)：程序执行过程中的任意位置，粒度为执行方法、抛出异常、设置变量等
+  - 在SpringAOP中，理解为方法的执行
+- 切入点(Pointcut):匹配连接点的式子
+  - 在SpringAOP中，一个切入点可以描述一个具体方法，也可也匹配多个方法
+    - 一个具体的方法:如com.itheima.dao包下的BookDao接口中的无形参无返回值的save方法
+    - 匹配多个方法:所有的save方法，所有的get开头的方法，所有以Dao结尾的接口中的任意方法，所有带有一个参数的方法
+  - 连接点范围要比切入点范围大，是切入点的方法也一定是连接点，但是是连接点的方法就不一定要被增强，所以可能不是切入点。
+- 通知(Advice):在切入点处执行的操作，也就是共性功能
+  - 在SpringAOP中，功能最终以方法的形式呈现
+- 通知类：定义通知的类
+- 切面(Aspect):描述通知与切入点的对应关系。
 
 ![preview](img/v2-e777957e808c92fefcbcbec3945a2f91_r.jpg)
 
-## 11.2 AOP在Spring中的作用
+## 12.2 AOP在Spring中的作用
 
 **提供声明式事务:允许用户自定义切面**
 
@@ -865,9 +918,9 @@ SpringAOP中，通过Advice定义横切逻辑，Spring中支持5种类型的Advi
 
 ![20200219154304911](img/20200219154304911.png)
 
-## 11.3 使用Spring实现AOP
+## 12.3 使用Spring实现AOP入门案例
 
-需要增加一个依赖
+导入spring-context自动有AOP的包，然后需要增加一个依赖
 
 ```xml
 <!-- https://mvnrepository.com/artifact/org.aspectj/aspectjweaver -->
@@ -877,198 +930,82 @@ SpringAOP中，通过Advice定义横切逻辑，Spring中支持5种类型的Advi
         <artifactId>aspectjweaver</artifactId>
         <version>1.9.7</version>
     </dependency>
+    <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>5.2.12.RELEASE</version>
+    </dependency>
 </dependencies>
 ```
 
-方式一：
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:aop="http://www.springframework.org/schema/aop"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/aop
-        http://www.springframework.org/schema/aop/spring-aop.xsd">
-    <bean id="userService" class="com.cw.service.UserServiceImpl"/>
-    <bean id="log" class="com.cw.log.Log"/>
-    <bean id="afterlog" class="com.cw.log.AfterLog"/>
-
-    <!--方式一 使用原生的Spring API接口    -->
-    <!--配置aop 需要导入aop的约束-->
-    <aop:config>
-        <!--切入点: expression:表达式，
-        execution(要执行的位置！ 修饰符 返回值 类名 方法名 参数)-->
-        <aop:pointcut id="pointcut" expression="execution(* com.cw.service.UserServiceImpl.*(..))"/>
-        <!--执行环绕增加-->
-        <aop:advisor advice-ref="log" pointcut-ref="pointcut"/>
-        <aop:advisor advice-ref="afterlog" pointcut-ref="pointcut"/>
-    </aop:config>
-</beans>
-```
+使用注解实现AOP
 
 ```java
-package com.cw.service;
+// src/main/java/com/cw/aop/MyAdvice.java 切面类
+@Component // 2 加载成bean
+@Aspect // 3 该类用来做AOP
+public class MyAdvice {
 
-public interface UserService {
-    public void add();
-    public void delete();
-    public void update();
-    public void query();
-}
-```
-
-```java
-package com.cw.service;
-
-public class UserServiceImpl implements UserService{
-    @Override
-    public void add() {
-        System.out.println("增加了用户");
-    }
-
-    @Override
-    public void delete() {
-        System.out.println("删除了用户");
-    }
-
-    @Override
-    public void update() {
-        System.out.println("更新了用户");
-    }
-
-    @Override
-    public void query() {
-        System.out.println("查找了用户");
+    //4 定义好切入点
+    @Pointcut("execution(void com.cw.dao.BookDao.update())")
+    private void pt(){}
+	
+    // 5 定义好通知，@Before("pt()") 绑定切入点和通知
+    @Before("pt()")
+    public void method(){
+        System.out.println(System.currentTimeMillis());
     }
 }
 ```
 
 ```java
-package com.cw.log;
-
-import org.springframework.aop.AfterReturningAdvice;
-
-import java.lang.reflect.Method;
-
-public class AfterLog implements AfterReturningAdvice {
-    //Object o 返回值
-    @Override
-    public void afterReturning(Object o, Method method, Object[] objects, Object o1) throws Throwable {
-        System.out.println("执行了"+method.getName()+"方法，返回结果为"+o);
-    }
+// 配置类 src/main/java/com/cw/config/SpringConfig.java
+@Configuration
+@ComponentScan("com.cw")
+@EnableAspectJAutoProxy //1 启动了注解开发的AOP
+public class SpringConfig {
 }
 ```
+
+## 12.3 AOP切入点表达式
+
+1. 执行com.itheima.dao包下的BookDao**接口**中的无参数update方法
 
 ```java
-package com.cw.log;
-
-import org.springframework.aop.MethodBeforeAdvice;
-
-import java.lang.reflect.Method;
-
-public class Log implements MethodBeforeAdvice {
-
-    //要执行的目标对象的方法
-    //objects 参数
-    //o 目标
-    @Override
-    public void before(Method method, Object[] objects, Object o) throws Throwable {
-        System.out.println(o.getClass().getName()+"的"+method.getName()+"被执行了");
-    }
-}
+execution(void com.itheima.dao.BookDao.update())
 ```
 
-方式二：使用自定义类实现AOP
+2. 执行com.itheima.dao.impl包下的BookDaoImpl**类**中的无参数update方法
+   `execution(void com.itheima.dao.impl.BookDaoImpl.update())`
 
-```xml
-<aop:config>
-<!--        自定切面 ref引用的类-->
-        <aop:aspect ref="diy">
-            <!--切入点-->
-            <aop:pointcut id="pointcut" expression="execution(* com.cw.service.UserServiceImpl.*(..))"/>
-            <!--通知-->
-            <aop:before method="before" pointcut-ref="pointcut"/>
-            <aop:after method="after" pointcut-ref="pointcut"/>
-        </aop:aspect>
-    </aop:config>
-```
+**切入点表达式标准格式：**
 
-```java
-package com.cw.diy;
+动作关键字（访问修饰符  返回值  包名.类/接口名.方法名（参数) 异常名 )
+`execution (public User com.itheima.service.UserService.findById (int))`
 
-public class DiyPointCut {
-    public void before(){
-        System.out.println("方法执行前==========");
-    }
+**如何快速描述一组切入点方法?**  
 
-    public void after(){
-        System.out.println("方法执行后==========");
-    }
-}
-```
+* 使用通配符
 
-方式三：使用注解实现AOP
+*:单个独立的任意符号，一个 *一个包 可以独立出现，也可以作为前缀或者后缀的匹配符出现
+`execution (public com.itheima.*.UserService.find*(*)`
+匹配com.itheima包下的任意包中的UserService类或接口中所有find开头的带有一个参数的方法
 
-```xml
-<!--    方式三 开启注解支持-->
-    <context:component-scan base-package="com.cw"/>
-    <context:annotation-config/>
-    <aop:aspectj-autoproxy/>
-```
+.. : 多个连续的任意符号，代表一个或多个包可以独立出现，常用于简化包名与参数的书写
 
-```java
-package com.cw.diy;
+`execution(public User com..UserService.findById(..))`
+匹配com包下的任意包中的JserService类或接口中所有名称为findByld的方法
 
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.Signature;
-import org.aspectj.lang.annotation.After;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.springframework.stereotype.Component;
+`execution(* *..*(..))`
+返回任意类型任意包下的任意实现类或接口,任意参数
 
-@Component //注册进了bean
-@Aspect //标注这个类是切面
-public class AnnotationPointCut {
+`execution(* *..*e(..))`
+匹配e结尾的方法
 
-    @Before("execution(* com.cw.service.UserServiceImpl.*(..))")
-    public void before(){
-        System.out.println("方法执行前==========");
-    }
-    @After("execution(* com.cw.service.UserServiceImpl.*(..))")
-    public void after(){
-        System.out.println("方法执行后==========");
-    }
-    //在环绕增强中，可以给定一个参数，代表要切入点的位置
-    @Around("execution(* com.cw.service.UserServiceImpl.*(..))")
-    public void around(ProceedingJoinPoint joinPoint) throws Throwable {
-        System.out.println("环绕前==========");
-        //获得签名
-        Signature signature = joinPoint.getSignature();
-        System.out.println(signature);
-        //执行方法
-        Object proceed = joinPoint.proceed();
-        System.out.println("环绕后==========");
++:专用于匹配子类类型
+`execution(**..*Service+.*(..))`
 
-    }
-}
-```
+所有代码按照标准规范开发，否则以下技巧全部失效
 
-```java
-import com.cw.service.UserService;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-
-public class MyTest {
-    public static void main(String[] args) {
-
-        ApplicationContext context = new ClassPathXmlApplicationContext("applicationContext.xml");
-        //动态代理代理的是接口
-        UserService userService = (UserService)context.getBean("userService");
-        userService.add();
-    }
-}
-```
+![image-20220429215839521](img/image-20220429215839521.png)
 
