@@ -379,8 +379,8 @@ Spring会在上下文中自动寻找，并自动给bean装配属性！
 
 在Spring中有三种装配的方式：
 
-1. 在xml中显示的配置
-2. 在java中显示的配置
+1. 在xml中显式的配置
+2. 在java中显式的配置
 3. 隐式的自动装配【重要】
 
 ## 7.1 测试
@@ -967,7 +967,7 @@ public class SpringConfig {
 }
 ```
 
-## 12.3 AOP切入点表达式
+## 12.4 AOP切入点表达式
 
 1. 执行com.itheima.dao包下的BookDao**接口**中的无参数update方法
 
@@ -1008,4 +1008,106 @@ execution(void com.itheima.dao.BookDao.update())
 所有代码按照标准规范开发，否则以下技巧全部失效
 
 ![image-20220429215839521](img/image-20220429215839521.png)
+
+## 12.5 AOP的通知类型
+
+AOP通知描述了抽取的共性功能，根据共性功能抽取的位置不同，最终运行代码时要将其加入到合理的位置
+5种类型：
+
+* 前置通知 `@Before：前置通知，在原始方法运行之前执行`
+* 后置通知 `@After：后置通知，在原始方法运行之后执行`
+* **环绕通知**（重点） `@Around：环绕通知，在原始方法运行的前后执行`
+
+```java
+//无返回值类型的环绕通知(切入点是方法类型)
+@Around("pt()")
+public void around(ProceedingJoinPoint pjp) throws Throwable{
+    System.out.println("before");
+    //表示对原始操作的调用
+    pjp.proceed();
+    System.out.println("after");
+}
+
+//有返回值类型的环绕通知(切入点是基本数据类型)
+public Object aroundSelect(ProceedingJoinPoint pjp) throws Throwable {
+        System.out.println("around before advice ...");
+        //表示对原始操作的调用
+        Integer ret = (Integer) pjp.proceed();
+        System.out.println("around after advice ...");
+        return ret;
+    }
+```
+
+* 返回后通知（了解）
+* 抛出异常后通知（了解）
+
+## 12.6 案例：测量业务层接口的执行效率（万次）
+
+<img src="img/image-20220430162200794.png" alt="image-20220430162200794" style="zoom:50%;" />
+
+## 12.7 AOP通知获取数据
+
+三种：
+
+* 参数
+
+![image-20220430163153189](img/image-20220430163153189.png)
+
+* 返回值 （前面已经有）
+* 异常（略）
+
+# 13. Spring事务简介
+
+事务作用：
+
+* 在数据层保障一系列的数据库操作同成功同失败，比如A转B 1000 如果B收不到1000,则A转账失败，不掉钱
+
+Spring事务作用：
+
+* 在数据层或业务层保障一系列的数据库操作同成功同失败
+
+```java
+public interface PlatformTransactionManager{
+    void commit(TransactionStatus status)throws TransactionException;
+    void rollback(TransactionStatus status)throws TransactionException;
+}
+```
+
+1. 设置事务管理器，一般在配置类的jdbcconfig.class写入
+
+```java
+ //配置事务管理器，mybatis使用的是jdbc事务 在JdbcConfig.class中写
+ @Bean
+ public PlatformTransactionManager transactionManager(DataSource dataSource){
+     DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
+     transactionManager.setDataSource(dataSource);
+     return transactionManager;
+ }
+```
+
+2. 告诉Spring配置类 我们配了事务的方法
+
+```java
+//开启注解式事务驱动, 在SpringConfig.class中写
+@EnableTransactionManagement
+```
+
+3. 在要添加事务的类上开启事务(一般写在业务层接口上)
+
+```java
+//配置当前接口方法, 开启事务
+@Transactional
+```
+
+## 13.1 事务相关属性（注解中开启）
+
+![image-20220430165245219](img/image-20220430165245219.png)
+
+事务传播行为使用：
+
+<img src="img/image-20220430170121495.png" alt="image-20220430170121495" style="zoom:50%;" />
+
+事务传播行为情况：
+
+<img src="img/image-20220430170219379.png" alt="image-20220430170219379" style="zoom:50%;" />
 
